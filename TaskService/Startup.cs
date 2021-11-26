@@ -8,7 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using TaskService.Consumer;
+using TaskService.Contracts;
 using TaskService.Database;
+using TaskService.Services;
 
 namespace UserService
 {
@@ -33,13 +35,12 @@ namespace UserService
                 x.AddConsumer<TaskConsumer>();
                 x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(cfg =>
                 {
-                    cfg.UseHealthCheck(provider);
                     cfg.Host(new Uri("rabbitmq://localhost"), h =>
                     {
                         h.Username("guest");
                         h.Password("guest");
                     });
-                    cfg.ReceiveEndpoint("ticketQueue", ep =>
+                    cfg.ReceiveEndpoint("theUserTaskQueue", ep =>
                     {
                         ep.PrefetchCount = 16;
                         ep.UseMessageRetry(r => r.Interval(2, 100));
@@ -48,6 +49,8 @@ namespace UserService
                 }));
             });
             services.AddMassTransitHostedService();
+
+            services.AddSingleton<ILoggerService, LoggerService>();
 
             services.AddControllers();
         }

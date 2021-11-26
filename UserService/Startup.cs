@@ -12,7 +12,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using UserService.Contracts;
 using UserService.Database;
+using UserService.Services;
 
 namespace UserService
 {
@@ -24,8 +26,6 @@ namespace UserService
         }
 
         public IConfiguration Configuration { get; }
-
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<DatabaseContext>(options =>
@@ -36,7 +36,6 @@ namespace UserService
             {
                 x.AddBus(provider => Bus.Factory.CreateUsingRabbitMq(config =>
                 {
-                    config.UseHealthCheck(provider);
                     config.Host(new Uri("rabbitmq://localhost"), h =>
                     {
                         h.Username("guest");
@@ -46,10 +45,11 @@ namespace UserService
             });
             services.AddMassTransitHostedService();
 
+            services.AddSingleton<ILoggerService, LoggerService>();
+
             services.AddControllers();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment())

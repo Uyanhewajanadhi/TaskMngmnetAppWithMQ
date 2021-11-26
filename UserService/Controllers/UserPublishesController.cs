@@ -1,7 +1,6 @@
 ﻿using MassTransit;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using SharedModels.Model;
+using SharedModels.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,13 +17,14 @@ namespace UserService.Controllers
         {
             _bus = bus;
         }
+
         [HttpPost]
         public async Task<IActionResult> CreateUserTask(TaskMsg taskMsg)
         {
             if (taskMsg != null)
             {
                 taskMsg.startTime = DateTime.Now;
-                Uri uri = new Uri("rabbitmq://localhost/userTaskQueue");
+                Uri uri = new Uri("rabbitmq://localhost/theUserTaskQueue");
                 var endPoint = await _bus.GetSendEndpoint(uri);
                 await endPoint.Send(taskMsg);
                 return Ok();

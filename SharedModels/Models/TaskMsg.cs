@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Shared.Models.Models
+namespace SharedModels.Models
 {
-    public class UserTask
+    public class TaskMsg
     {
         public int EmpId { get; set; }
         public int TaskId { get; set; }
-
-        public DateTime StartedOn { get; set; }
+        public DateTime startTime { get; set; }
     }
 }
