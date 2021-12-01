@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TaskService.Contracts;
@@ -38,10 +36,7 @@ namespace TaskService.Controllers
         {
             var tasksDb = await _context.Tasks.FindAsync(id);
 
-            if (tasksDb == null)
-            {
-                return NotFound();
-            }
+            if (tasksDb == null) { return NotFound(); }
 
             string msg = "User data with id" + id + "has been retrieved";
             _logger.LogInfo(msg);
@@ -54,13 +49,7 @@ namespace TaskService.Controllers
         public async Task<IActionResult> PutTasksDb(int id, TasksDb tasksDb)
         {
 
-            //get the password and check if it with the password in User Table.
-            //even the password is needed to be changed, check it  with the previous password.
-
-            if (id != tasksDb.TaskId)
-            {
-                return BadRequest();
-            }
+            if (id != tasksDb.TaskId) { return BadRequest(); }
 
             string msg = "User data with id" + id + "has been updated";
             _logger.LogInfo(msg);
@@ -73,14 +62,8 @@ namespace TaskService.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!TasksDbExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                if (!TasksDbExists(id)) { return NotFound(); }
+                else { throw; }
             }
 
             return NoContent();
@@ -90,19 +73,6 @@ namespace TaskService.Controllers
         [HttpPost]
         public async Task<ActionResult<TasksDb>> PostTasksDb(TasksDb tasksDb)
         {
-
-            //get the password from the user id and check it matches.
-            //var user =  _context.User.FindAsync(userID);
-            //var password = _context.User.Where(x => x.EmpId == 1).Select(x => x.Password).FirstOrDefault();
-
-            //  //incoming pw
-            //  var hashedPassword = PasswordManager.HashPassword(tasks.password);
-
-            //  if (hashedPassword == password)
-            //  {
-            //      true
-            //  }
-
             _logger.LogInfo("New data has been created");
 
             _context.Tasks.Add(tasksDb);
@@ -116,10 +86,7 @@ namespace TaskService.Controllers
         public async Task<ActionResult<TasksDb>> DeleteTasksDb(int id)
         {
             var tasksDb = await _context.Tasks.FindAsync(id);
-            if (tasksDb == null)
-            {
-                return NotFound();
-            }
+            if (tasksDb == null) { return NotFound(); }
 
             string msg = "User data with id" + id + "has been deleted";
             _logger.LogWarn(msg);
@@ -127,9 +94,6 @@ namespace TaskService.Controllers
 
             _context.Tasks.Remove(tasksDb);
             await _context.SaveChangesAsync();
-
-            //get the password from the user who's trying to delete the record
-            //and check if the password matches for the password in User table
 
             return tasksDb;
         }

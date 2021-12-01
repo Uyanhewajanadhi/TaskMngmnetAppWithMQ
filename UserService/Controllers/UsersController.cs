@@ -1,17 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ProjectForAssignment.Manager;
 using UserService.Contracts;
 using UserService.Database;
+using UserService.Models;
+using Mapster;
+using Microsoft.AspNetCore.Authorization;
+using System.Configuration;
+using Microsoft.Extensions.Configuration;
 
 namespace UserService.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class UsersController : ControllerBase
     {
@@ -19,22 +28,26 @@ namespace UserService.Controllers
 
         private readonly DatabaseContext _context;
 
-        public UsersController(DatabaseContext context, ILoggerService logger)
+        private readonly IConfiguration Configuration;
+
+        public UsersController(DatabaseContext context, ILoggerService logger, IConfiguration configuration)
         {
             _context = context;
             _logger = logger;
+            Configuration = configuration;
         }
 
         // GET: api/Users
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<User>>> GetUsersDb()
-        {
+        {           
             //Show except password
             _logger.LogInfo("User data has been retrieved");
             var users = await _context.UsersDb.ToListAsync();
             //return users.Select(u => u.Email).ToList();
             return users.Select(u => new User() {
-
+                EmpId = u.EmpId,
                 UserName = u.UserName,
                 Email = u.Email,
                 Designation = u.Designation
@@ -45,14 +58,32 @@ namespace UserService.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(int id)
         {
-            //Return details except password
-            string msg = "User data with id" + id + "has been retrieved";
-            _logger.LogInfo(msg);
+           
             var user = await _context.UsersDb.FindAsync(id);
 
-            if (user == null)
+            if (user == null) { return NotFound(); }
+
+            string claimsEmail;
+
+            if (User.Identity.IsAuthenticated)
             {
-                return NotFound();
+                claimsEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                Console.WriteLine("Valid Token");
+            }
+            else
+            {
+                Console.WriteLine("InValid Token");
+                return Forbid();
+            }
+
+            if (claimsEmail != null && claimsEmail.Equals(user.Email))
+            {
+                //string msg = "User data with id" + id + "has been retrieved";
+                _logger.LogInfo("User data with id" + id.ToString() + "has been retrieved");
+            }
+            else
+            {
+                return Forbid();
             }
 
             return user;
@@ -62,49 +93,56 @@ namespace UserService.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(int id, User user)
         {
-            //First check wether previous password matches
 
-            //Hash the user.password if it is getting input
-
-            //check if the email matches the reg-ex 
-
-            if (id != user.EmpId)
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+            string? claimsEmail;
+#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+            if (User.Identity.IsAuthenticated)
             {
-                return BadRequest();
+                claimsEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                Console.WriteLine("Valid Token");
+            }
+            else
+            {
+                Console.WriteLine("InValid Token");
+                return Forbid();
             }
 
-            string msg = "User data with id" + id + "has been updated";
-            _logger.LogInfo(msg);
-
-            _context.Entry(user).State = EntityState.Modified;
-
-            try
+            if (claimsEmail != null && claimsEmail.Equals(user.Email))
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
+
+                string msg = "User data with id" + id + "has been updated";
+                _logger.LogInfo(msg);
+
+                _context.Entry(user).State = EntityState.Modified;
+
+                try
                 {
-                    return NotFound();
+                    await _context.SaveChangesAsync();
                 }
-                else
+                catch (DbUpdateConcurrencyException)
                 {
-                    throw;
+                    if (!UserExists(id)) { return NotFound(); }
+                    else { throw; }
                 }
-            }
 
-            return Ok();
+                return Ok();
+
+            }
+            else { return Forbid(); }
         }
 
         // POST: api/Users
         [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        [AllowAnonymous]
+        public async Task<ActionResult<UserDTO>> PostUser(User user)
         {
+
+
             //Hash the user.password
             var hashedPassword = PasswordManager.HashPassword(user.Password);
 
-            //check if the emial mathces th ereg-ex
+            //check if the emial matches th ereg-ex
             var valid = EmailManager.EmailValidation(user.Email);
             if (!valid)
             {
@@ -119,8 +157,12 @@ namespace UserService.Controllers
             _context.UsersDb.Add(user);
             await _context.SaveChangesAsync();
 
+            string token = ValidateUser(user.Email);
 
-            return CreatedAtAction("GetUser", new { id = user.EmpId }, user);
+            UserDTO userDto = user.Adapt<UserDTO>();
+            userDto.Token = token;
+
+            return CreatedAtAction("GetUser", new { id = user.EmpId }, userDto);
         }
 
         // DELETE: api/Users/5
@@ -133,16 +175,49 @@ namespace UserService.Controllers
                 return NotFound();
             }
 
-            string msg = "User data with id" + id + "has been deleted";
-            _logger.LogWarn(msg);
 
-            //get the password checked before deleting the data.
-            //so we need to check wther this password  matches with hashed password in the DB
+ //// The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+#pragma warning disable CS8632 
+            string? claimsEmail;
+#pragma warning restore CS8632 
+            if (User.Identity.IsAuthenticated)
+            {
+                claimsEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                Console.WriteLine("Valid Token");
+            }
+            else
+            {
+                Console.WriteLine("InValid Token");
+                return Forbid();
+            }
 
-            _context.UsersDb.Remove(user);
-            await _context.SaveChangesAsync();
+            if (claimsEmail != null && claimsEmail.Equals(user.Email))
+            {
+                string msg = "User data with id" + id + "has been deleted";
+                _logger.LogWarn(msg);
 
-            return user;
+                _context.UsersDb.Remove(user);
+                await _context.SaveChangesAsync();
+
+                return user;
+
+            }
+            else
+            {
+                return Forbid();
+            }
+
+            
+        }
+
+        [HttpPost("generate")]
+        [AllowAnonymous]
+        public ActionResult<string> GenerateToken(UserDTO user)
+        {
+            //password
+            var token = ValidateUser(user.Email);
+
+            return token;
         }
 
         private bool UserExists(int id)
@@ -150,9 +225,78 @@ namespace UserService.Controllers
             return _context.UsersDb.Any(e => e.EmpId == id);
         }
 
-        //validateUser(){
-        //  
-        //}
+        private string ValidateUser(string email){
+
+            string key = Configuration["SecretKey"]; //Secret key   
+            string issuer = Configuration["Issuer"];
+
+            SymmetricSecurityKey securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
+            SigningCredentials credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            List<Claim> permClaims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Sub, email)
+            };
+
+            //Create Security Token object by giving required parameters    
+            var token = new JwtSecurityToken(issuer, //Issure    
+                            issuer,  //Audience    
+                            permClaims,
+                            expires: DateTime.Now.AddDays(1),
+                            signingCredentials: credentials);
+            var jwt_token = new JwtSecurityTokenHandler().WriteToken(token);
+
+            Console.WriteLine(jwt_token);
+
+            return jwt_token;
+        }
+
+        public static string ValidateToken(string token)
+        {
+            string username = null;
+            ClaimsPrincipal principal = GetPrincipal(token);
+            if (principal == null) return null;
+            ClaimsIdentity identity = null;
+            try
+            {
+                identity = (ClaimsIdentity)principal.Identity;
+            }
+            catch (NullReferenceException)
+            {
+                return null;
+            }
+            Claim usernameClaim = identity.FindFirst(ClaimTypes.Name);
+            username = usernameClaim.Value;
+            return username;
+        }
+
+        public static ClaimsPrincipal GetPrincipal(string token)
+        {
+            try
+            {
+                JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+                JwtSecurityToken jwtToken = (JwtSecurityToken)tokenHandler.ReadToken(token);
+                if (jwtToken == null)
+                    return null;
+                byte[] key = Convert.FromBase64String("ERMN05OPLoDvbTTa/QkqLNMI7cPLguaRyHzyg7n5qNBVjQmtBhz4SzYh4NBVCXi3KJHlSXKP+oi2+bXr6CUYTR==");
+                TokenValidationParameters parameters = new TokenValidationParameters()
+                {
+                    RequireExpirationTime = true,
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    IssuerSigningKey = new SymmetricSecurityKey(key)
+                };
+                SecurityToken securityToken;
+                ClaimsPrincipal principal = tokenHandler.ValidateToken(token,
+                      parameters, out securityToken);
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 }
  

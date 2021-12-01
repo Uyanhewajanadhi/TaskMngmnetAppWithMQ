@@ -1,14 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace UserService.Database
+﻿namespace UserService.Models
 {
-    public class User
+    public class UserDTO
     {
-        [Key]
         public int EmpId { get; set; }
         public string UserName { get; set; }
         public string Email { get; set; }
         public string Password { get; set; }
         public string Designation { get; set; }
+
+        public string Token { get; set; }
     }
 }

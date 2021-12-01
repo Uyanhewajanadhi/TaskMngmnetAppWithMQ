@@ -1,10 +1,6 @@
 ﻿using MassTransit;
 using SharedModels.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using TaskService.Contracts;
 
 namespace TaskService.Consumer
 {
