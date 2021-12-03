@@ -40,13 +40,13 @@ namespace UserService.Controllers
         // GET: api/Users
         [HttpGet]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsersDb()
+        public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsersDb()
         {           
             //Show except password
             _logger.LogInfo("User data has been retrieved");
             var users = await _context.UsersDb.ToListAsync();
             //return users.Select(u => u.Email).ToList();
-            return users.Select(u => new User() {
+            return users.Select(u => new UserDTO() {
                 EmpId = u.EmpId,
                 UserName = u.UserName,
                 Email = u.Email,
@@ -80,6 +80,8 @@ namespace UserService.Controllers
             {
                 //string msg = "User data with id" + id + "has been retrieved";
                 _logger.LogInfo("User data with id" + id.ToString() + "has been retrieved");
+                 
+                System.Diagnostics.Debug.WriteLine("User data with id " + id.ToString() + " has been retrieved");
             }
             else
             {
