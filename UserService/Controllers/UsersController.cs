@@ -39,9 +39,20 @@ namespace UserService.Controllers
 
         // GET: api/Users
         [HttpGet]
-        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsersDb()
-        {           
+        {
+            string claimsEmail;
+
+            if (User.Identity.IsAuthenticated)
+            {
+                claimsEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                Console.WriteLine("Valid Token");
+            }
+            else
+            {
+                Console.WriteLine("InValid Token");
+                return Forbid();
+            }
             //Show except password
             _logger.LogInfo("User data has been retrieved");
             var users = await _context.UsersDb.ToListAsync();
@@ -96,9 +107,8 @@ namespace UserService.Controllers
         public async Task<IActionResult> PutUser(int id, User user)
         {
 
-#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
-            string? claimsEmail;
-#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+            string claimsEmail;
+
             if (User.Identity.IsAuthenticated)
             {
                 claimsEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -124,8 +134,12 @@ namespace UserService.Controllers
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!UserExists(id)) { return NotFound(); }
-                    else { throw; }
+                    if (!UserExists(id)) { 
+                        return NotFound(); 
+                    }
+                    else { 
+                        throw; 
+                    }
                 }
 
                 return Ok();
@@ -139,17 +153,18 @@ namespace UserService.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<UserDTO>> PostUser(User user)
         {
+            //int? x = 5;
+            //var y = x ?? 1;
 
-
-            //Hash the user.password
-            var hashedPassword = PasswordManager.HashPassword(user.Password);
-
-            //check if the emial matches th ereg-ex
+            //check if the email matches the reg-ex
             var valid = EmailManager.EmailValidation(user.Email);
             if (!valid)
             {
                 return BadRequest();
             }
+
+            //Hash the user.password
+            var hashedPassword = PasswordManager.HashPassword(user.Password);
 
             string msg = "New data has been created";
             _logger.LogInfo(msg);
@@ -178,10 +193,8 @@ namespace UserService.Controllers
             }
 
 
- //// The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
-#pragma warning disable CS8632 
-            string? claimsEmail;
-#pragma warning restore CS8632 
+
+            string claimsEmail;
             if (User.Identity.IsAuthenticated)
             {
                 claimsEmail = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

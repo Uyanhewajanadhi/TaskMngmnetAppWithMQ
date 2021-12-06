@@ -14,7 +14,7 @@ namespace TaskService.Consumer
             string text = "\n Consumed message from the message queue ->  ( " +
                 " Emp ID: "  + context.Message.EmpId +
                 " Task ID: " + context.Message.TaskId +
-                " Start Time: " + context.Message.startTime.ToString();
+                " Start Time: " + context.Message.startTime.ToString() +")";
 
             await File.AppendAllTextAsync("log.txt", text);
         }
