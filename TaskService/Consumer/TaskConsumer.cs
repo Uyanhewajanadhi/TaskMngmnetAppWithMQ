@@ -43,7 +43,9 @@ namespace TaskService.Consumer
                 if (taskData == null)
                 {
                     taskData = new TasksDb();
+                    taskData.TaskName = context.Message.TaskName?? "Modify this title" ;
                 }
+
 
                 taskData.EndTime = context.Message?.EndTime;
                 taskData.Status = ( context.Message.Status>0 ) ? context.Message.Status:0;
