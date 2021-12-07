@@ -3,8 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SharedModels.DTOs;
 using TaskService.Contracts;
 using TaskService.Database;
+using static SharedModels.Models.Enums;
 
 namespace TaskService.Controllers
 {
@@ -42,6 +44,24 @@ namespace TaskService.Controllers
             _logger.LogInfo(msg);
 
             return tasksDb;
+        }
+
+        // GET: api/Tasks/0
+        [HttpGet("statustype/{statusType}")]
+        public async Task<ActionResult<List<TasksDb>>> GetTasksForType(TaskStateTypes statusType)
+        {
+
+            var tasks = await _context.Tasks
+                        .Where(b => b.Status == (int)statusType)
+                        .ToListAsync();
+
+            if (tasks == null) { return NotFound(); }
+            
+
+            string msg = "Task data from status type" + statusType + "has been retrieved";
+            _logger.LogInfo(msg);
+
+            return tasks;
         }
 
         // PUT: api/Tasks/5

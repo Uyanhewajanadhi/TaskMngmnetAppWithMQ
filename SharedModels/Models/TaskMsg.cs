@@ -6,6 +6,10 @@ namespace SharedModels.Models
     {
         public int EmpId { get; set; }
         public int TaskId { get; set; }
-        public DateTime startTime { get; set; }
+        public string Token { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public int Status { get; set; }
+
     }
 }
