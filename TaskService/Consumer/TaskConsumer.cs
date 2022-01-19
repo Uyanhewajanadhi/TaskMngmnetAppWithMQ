@@ -47,7 +47,7 @@ namespace TaskService.Consumer
                 }
 
 
-                taskData.EndTime = context.Message?.EndTime;
+                taskData.EndTime = context.Message.EndTime;
                 taskData.Status = ( context.Message.Status>0 ) ? context.Message.Status:0;
 
                 //put

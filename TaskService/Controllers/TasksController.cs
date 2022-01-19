@@ -14,13 +14,10 @@ namespace TaskService.Controllers
     [ApiController]
     public class TasksController : ControllerBase
     {
-        private readonly ILoggerService _logger;
 
         private readonly DatabaseContext _context;
-
-        public TasksController(DatabaseContext context, ILoggerService logger)
+        public TasksController(DatabaseContext context)
         {
-            _logger = logger;
             _context = context;
         }
 
@@ -28,8 +25,31 @@ namespace TaskService.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TasksDb>>> GetTasks()
         {
-            _logger.LogInfo("User data has been retrieved");
             return await _context.Tasks.ToListAsync();
+        }
+
+        public List<TasksDb> GetTasksNames()
+        {
+            var query = from b in _context.Tasks orderby b.TaskId select b;
+            return query.ToList();
+        }
+
+        public List<TasksDb> GetTasksStatus(int state)
+        {
+            var query = from b in _context.Tasks where b.Status == state orderby b.TaskId select b;
+            return query.ToList();
+        }
+
+        public TasksDb GetTasksId(int Task_id)
+        {
+            var query = from b in _context.Tasks where b.TaskId == Task_id select b;
+            return query.FirstOrDefault();
+        }
+
+        public List<TasksDb> PostTasks()
+        {
+            var query = from b in _context.Tasks orderby b.TaskName select b;
+            return query.ToList();
         }
 
         // GET: api/Tasks/5
@@ -40,9 +60,7 @@ namespace TaskService.Controllers
 
             if (tasksDb == null) { return NotFound(); }
 
-            string msg = "User data with id" + id + "has been retrieved";
-            _logger.LogInfo(msg);
-
+            
             return tasksDb;
         }
 
@@ -58,9 +76,6 @@ namespace TaskService.Controllers
             if (tasks == null) { return NotFound(); }
             
 
-            string msg = "Task data from status type" + statusType + "has been retrieved";
-            _logger.LogInfo(msg);
-
             return tasks;
         }
 
@@ -71,8 +86,6 @@ namespace TaskService.Controllers
 
             if (id != tasksDb.TaskId) { return BadRequest(); }
 
-            string msg = "User data with id" + id + "has been updated";
-            _logger.LogInfo(msg);
 
             _context.Entry(tasksDb).State = EntityState.Modified;
 
@@ -93,7 +106,6 @@ namespace TaskService.Controllers
         [HttpPost]
         public async Task<ActionResult<TasksDb>> PostTasksDb(TasksDb tasksDb)
         {
-            _logger.LogInfo("New data has been created");
 
             _context.Tasks.Add(tasksDb);
             await _context.SaveChangesAsync();
@@ -107,9 +119,6 @@ namespace TaskService.Controllers
         {
             var tasksDb = await _context.Tasks.FindAsync(id);
             if (tasksDb == null) { return NotFound(); }
-
-            string msg = "User data with id" + id + "has been deleted";
-            _logger.LogWarn(msg);
 
 
             _context.Tasks.Remove(tasksDb);

@@ -90,9 +90,6 @@ namespace UserService.Controllers
                     .Where(x => x.Email == claimsEmail)
                     .FirstOrDefaultAsync();
 
-
-
-
                 taskMsg.EmpId = userData.EmpId;
                 taskMsg.StartTime = DateTime.Now;
 
