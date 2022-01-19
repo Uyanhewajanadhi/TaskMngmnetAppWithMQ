@@ -10,6 +10,8 @@ namespace TaskService.Database
         public string TaskName { get; set; }
         public DateTime StartTime{get; set;}
         public DateTime EndTime { get; set; }
-        public string Status { get; set; }
+        public int Status { get; set; }
+
+        public int EmpId { get; set; }
     }
 }
